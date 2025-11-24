@@ -26,6 +26,12 @@ class CaveStoryLocation(Location):
             self.place_locked_item(CaveStoryItem(name, ItemClassification.progression, None, parent.player))
 
 
+START_LOCATIONS = [
+    "Start Point - Door to First Cave",
+    "Arthur's House - Main Teleporter",
+    "Camp - Door to Labyrinth W (Lower)",
+]
+
 ALL_LOCATIONS: Dict[str, Optional[int]] = {
     "Egg Corridor - Basil Spot": base_id + 0,
     "Egg Corridor - Outside Cthulhu's Abode": base_id + 1,

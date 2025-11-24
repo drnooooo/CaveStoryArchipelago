@@ -1,15 +1,24 @@
 import asyncio
 import json
 import uuid
+from ast import Mod
 from enum import Enum
+from modulefinder import Module
 from pathlib import Path
 from typing import Tuple
+
+tracker_loaded = False
+try:
+    from worlds.tracker.TrackerClient import TrackerGameContext as SuperContext
+
+    tracker_loaded = True
+except ModuleNotFoundError:
+    from CommonClient import CommonContext as SuperContext
 
 import Utils
 from CommonClient import ClientCommandProcessor, CommonContext, get_base_parser, gui_enabled, logger, server_loop
 from worlds.cave_story import CaveStoryWorld
 
-from .ClientGui import start_gui
 from .Connector import *
 from .Constants import *
 from .Enums import CSPacket, CSTrackerAutoTab, CSTrackerEvent
@@ -35,10 +44,11 @@ class CaveStoryClientCommandProcessor(ClientCommandProcessor):
         return True
 
 
-class CaveStoryContext(CommonContext):
+class CaveStoryContext(SuperContext):
     command_processor: int = CaveStoryClientCommandProcessor
     game = "Cave Story"
     items_handling = 0b101
+    tags = {"AP"}
 
     def __init__(self, args):
         super().__init__(args.connect, args.password)
@@ -68,6 +78,7 @@ class CaveStoryContext(CommonContext):
         await self.send_connect()
 
     def on_package(self, cmd: str, args: dict):
+        super().on_package(cmd, args)
         if cmd == "RoomInfo":
             self.seed_name = args["seed_name"]
         elif cmd == "Connected":
@@ -89,8 +100,22 @@ class CaveStoryContext(CommonContext):
             send_packet(self, encode_packet(CSPacket.RUNTSC, "<HMC<SOU0017<WAI0020<FAO0003<TRA0000:0042:0000:0000"))
         )
 
-    def run_gui(self):
-        start_gui(self)
+    def make_gui(self):
+        ui = super().make_gui()
+        from .ClientGui import LauncherWidget
+
+        class CaveStoryManager(ui):
+            logging_pairs = [("Client", "Archipelago")]
+            base_title = "Cave Story Client"
+
+            def build(self_inner):
+                container = super().build()
+                launcher = LauncherWidget()
+                self_inner.add_client_tab("Cave Story Launcher", launcher)
+
+                return container
+
+        return CaveStoryManager
 
 
 def game_running(ctx):
@@ -279,6 +304,8 @@ async def main(args):
     ctx = CaveStoryContext(args)
     # Server task. Needs to run first in order for ctx to properly be set up
     server_task = asyncio.create_task(server_loop(ctx), name="server loop")
+    if tracker_loaded:
+        ctx.run_generator()
     if gui_enabled:
         ctx.run_gui()
     ctx.run_cli()

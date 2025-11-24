@@ -6,7 +6,7 @@ from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, icon_paths, launch_subprocess
 
 from .Items import ALL_ITEMS, FILLER_ITEMS, CaveStoryItem
-from .Locations import ALL_LOCATIONS, CaveStoryLocation
+from .Locations import ALL_LOCATIONS, START_LOCATIONS, CaveStoryLocation
 from .Options import CaveStoryOptions
 from .RegionsRules import REGIONS, RegionData, RuleData, trivial
 
@@ -23,6 +23,11 @@ def map_page_index(data: Any) -> int:
     if type(data) == int:
         return data
     return 0
+
+
+def interpret_slot_data(self, slot_data: dict[str, Any]) -> None:
+    if "start" in slot_data:
+        self.origin_region_name = START_LOCATIONS[slot_data["start"]]
 
 
 components.append(
@@ -90,6 +95,7 @@ class CaveStoryWorld(World):
         "map_page_setting_key": "cavestory_currentlevel_{team}_{player}",
         "map_page_index": map_page_index,
     }
+    ut_can_gen_without_yaml = True
 
     def generate_early(self) -> None:
         # read player settings to world instance
@@ -97,12 +103,11 @@ class CaveStoryWorld(World):
         # self.dificulty = self.multiworld.dificulty[self.player].value
 
     def create_regions(self) -> None:
-        if self.options.starting_location == 0:
-            starting_region = RegionData("Menu", [RuleData("Start Point - Door to First Cave", trivial)], [])
-        elif self.options.starting_location == 1:
-            starting_region = RegionData("Menu", [RuleData("Arthur's House - Main Teleporter", trivial)], [])
-        else:
-            starting_region = RegionData("Menu", [RuleData("Camp - Door to Labyrinth W (Lower)", trivial)], [])
+        try:
+            starting_region_name = START_LOCATIONS[self.options.starting_location]
+        except KeyError:
+            starting_region_name = START_LOCATIONS[1]  # Arthur's House
+        starting_region = RegionData("Menu", [RuleData(starting_region_name, trivial)], [])
         for region_data in [starting_region, *REGIONS]:
             region = Region(region_data.name, self.player, self.multiworld)
             self.multiworld.regions.append(region)
@@ -169,13 +174,12 @@ class CaveStoryWorld(World):
     # Unorder methods:
 
     def fill_slot_data(self) -> Mapping[str, Any]:
-        slot_data = {
+        return {
             "goal": int(self.options.goal),
             "start": int(self.options.starting_location),
             "deathlink": bool(self.options.deathlink),
             "no_blocks": bool(self.options.no_blocks),
         }
-        return slot_data
 
     def create_item(self, item: str):
         if item in FILLER_ITEMS.keys():

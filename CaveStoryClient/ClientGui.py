@@ -1,4 +1,5 @@
 import asyncio
+import pkgutil
 
 from kvui import GameManager  # isort: skip
 from kivy.app import App
@@ -98,28 +99,9 @@ class LauncherWidget(MDBoxLayout):
         self.dialog.dismiss()
 
 
-class CaveStoryManager(GameManager):
-    logging_pairs = [("Client", "Archipelago")]
-    base_title = "Cave Story Client"
-    instances_panel: Optional[LauncherWidget] = None
-
-    def __init__(self, ctx) -> None:
-        super().__init__(ctx)
-
-    def build(self):
-        container = super().build()
-        panel = self.add_client_tab("Cave Story Launcher", ScrollView())
-
-        self.instances_panel = LauncherWidget()
-        panel.content.add_widget(self.instances_panel)
-
-        return container
-
-
-def start_gui(ctx):
-    ctx.ui = CaveStoryManager(ctx)
-    ctx.ui_task = asyncio.create_task(ctx.ui.async_run(), name="UI")
-    import pkgutil
-
-    data = pkgutil.get_data(CaveStoryWorld.__module__, "CaveStoryClient/CaveStoryGui.kv").decode()
-    Builder.load_string(data)
+Builder.load_string(
+    pkgutil.get_data(
+        CaveStoryWorld.__module__,
+        "CaveStoryClient/CaveStoryGui.kv",
+    ).decode()
+)
