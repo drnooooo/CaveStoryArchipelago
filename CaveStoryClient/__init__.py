@@ -41,11 +41,11 @@ class CaveStoryClientCommandProcessor(ClientCommandProcessor):
 class CaveStoryContext(SuperContext):
     command_processor: int = CaveStoryClientCommandProcessor
     game = "Cave Story"
-    items_handling = 0b101
     tags = {"AP"}
 
     def __init__(self, args):
         super().__init__(args.connect, args.password)
+        self.items_handling = 0b101
         self.cs_streams: tuple = None
         self.send_lock: asyncio.Lock = asyncio.Lock()
         self.sync_lock: asyncio.Lock = asyncio.Lock()
