@@ -6,7 +6,7 @@ from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, icon_paths
 from worlds.LauncherComponents import launch as launch_component
 
-from .Items import ALL_ITEMS, FILLER_ITEMS, CaveStoryItem
+from .Items import ALL_ITEMS, FILLER_ITEMS, CaveStoryItem, ItemClassification
 from .Locations import ALL_LOCATIONS, START_LOCATIONS, CaveStoryLocation
 from .Options import CaveStoryOptions
 from .RegionsRules import REGIONS, RegionData, RuleData, trivial
@@ -134,11 +134,15 @@ class CaveStoryWorld(World):
                 world_itempool.append(
                     CaveStoryItem(item_name, item_data.classification, item_data.item_id, self.player)
                 )
-            # Custom handling for making only ONE missile expansion progression so we don't always start with missiles
-            # if item_name == "Missile Expansion":
-            #     self.multiworld.itempool[-item_data.cnt].classification = ItemClassification.progression
         # If early weapon is on place one of the weapons
-        if self.options.early_weapon:
+        if self.options.early_weapon == "good_weapons":
+            block_breaking_weapons = [
+                "Blade",
+                "Machine Gun",
+                "Progressive Polar Star",
+            ]
+        # Separate list for "annoying" weapons
+        if self.options.early_weapon == "annoying":
             block_breaking_weapons = [
                 "Blade",
                 "Machine Gun",
@@ -153,6 +157,7 @@ class CaveStoryWorld(World):
             start_weapon_name = self.random.choice(block_breaking_weapons)
             start_weapon_index = self.random.choice([index for index, item in list(enumerate(world_itempool)) if item.name == start_weapon_name])
             start_weapon_item = world_itempool.pop(start_weapon_index)
+            start_weapon_item.classification = ItemClassification.progression
             start_loc.place_locked_item(start_weapon_item)
         self.multiworld.itempool.extend(world_itempool)
 
